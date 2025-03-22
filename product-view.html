@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Details - CatalogueScore</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <div class="container">
+                <div class="logo">
+                    <h1>CatalogueScore</h1>
+                </div>
+                <div class="nav-links">
+                    <a href="index.html">Home</a>
+                    <a href="products.html" class="active">Products</a>
+                    <a href="cart.html">Cart <span id="cart-count">0</span></a>
+                    <a href="orders.html">Orders</a>
+                    <a href="account.html">Account</a>
+                    <a href="login.html" id="auth-link">Login</a>
+                </div>
+                <div class="mobile-menu-btn">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section class="product-view-section">
+            <div class="container">
+                <div class="breadcrumb">
+                    <a href="index.html">Home</a> &gt; 
+                    <a href="products.html">Products</a> &gt; 
+                    <span id="product-breadcrumb-name">Product Name</span>
+                </div>
+                
+                <div id="product-view-container" class="product-view-container">
+                    <!-- Product details will be loaded here -->
+                </div>
+                
+                <div class="product-tabs">
+                    <div class="tab-buttons">
+                        <button class="tab-btn active" data-tab="specifications">Specifications</button>
+                        <button class="tab-btn" data-tab="reviews">Reviews</button>
+                        <button class="tab-btn" data-tab="related">Related Products</button>
+                    </div>
+                    
+                    <div id="specifications-tab" class="tab-content active">
+                        <h3>Product Specifications</h3>
+                        <div id="product-specifications" class="product-specifications">
+                            <!-- Specifications will be loaded here -->
+                        </div>
+                    </div>
+                    
+                    <div id="reviews-tab" class="tab-content">
+                        <div class="reviews-header">
+                            <h3>Customer Reviews</h3>
+                            <button id="write-review-btn" class="btn btn-secondary">Write a Review</button>
+                        </div>
+                        
+                        <div id="review-form-container" class="review-form-container" style="display: none;">
+                            <h4>Write Your Review</h4>
+                            <div class="rating-input" id="rating-input">
+                                <span class="star" data-rating="1">☆</span>
+                                <span class="star" data-rating="2">☆</span>
+                                <span class="star" data-rating="3">☆</span>
+                                <span class="star" data-rating="4">☆</span>
+                                <span class="star" data-rating="5">☆</span>
+                            </div>
+                            <div class="review-comment-container">
+                                <textarea id="review-comment" placeholder="Share your thoughts about this product..."></textarea>
+                            </div>
+                            <div class="review-form-actions">
+                                <button id="submit-review" class="btn btn-primary">Submit Review</button>
+                                <button id="cancel-review" class="btn btn-secondary">Cancel</button>
+                            </div>
+                            <div id="review-message" class="message"></div>
+                        </div>
+                        
+                        <div id="reviews-container" class="reviews-container">
+                            <!-- Reviews will be loaded here -->
+                        </div>
+                    </div>
+                    
+                    <div id="related-tab" class="tab-content">
+                        <h3>Related Products</h3>
+                        <div id="related-products" class="product-grid">
+                            <!-- Related products will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 CatalogueScore. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is logged in
+            updateAuthUI();
+            
+            // Update cart count
+            updateCartCount();
+            
+            // Mobile menu toggle
+            const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+            const navLinks = document.querySelector('.nav-links');
+            
+            mobileMenuBtn.addEventListener('click', function() {
+                navLinks.classList.toggle('active');
+                mobileMenuBtn.classList.toggle('active');
+            });
+            
+            // Get product ID from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const productId = urlParams.get('id');
+            
+            if (!productId) {
+                window.location.href = 'products.html';
+                return;
+            }
+            
+            // Load product details
+            loadProductDetails(productId);
+            
+            // Load product specifications
+            loadProductSpecifications(productId);
+            
+            // Load reviews
+            loadReviews(productId);
+            
+            // Load related products
+            loadRelatedProducts(productId);
+            
+            // Tab switching
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const tab = this.getAttribute('data-tab');
+                    
+                    // Remove active class from all buttons and contents
+                    tabBtns.forEach(btn => btn.classList.remove('active'));
+                    tabContents.forEach(content => content.classList.remove('active'));
+                    
+                    // Add active class to clicked button and corresponding content
+                    this.classList.add('active');
+                    document.getElementById(`${tab}-tab`).classList.add('active');
+                });
+            });
+            
+            // Write review button
+            const writeReviewBtn = document.getElementById('write-review-btn');
+            const reviewFormContainer = document.getElementById('review-form-container');
+            const cancelReviewBtn = document.getElementById('cancel-review');
+            
+            writeReviewBtn.addEventListener('click', function() {
+                // Check if user is logged in
+                const currentUser = getCurrentUser();
+                if (!currentUser) {
+                    alert('Please login to write a review');
+                    window.location.href = `login.html?redirect=product-view.html?id=${productId}`;
+                    return;
+                }
+                
+                reviewFormContainer.style.display = 'block';
+                this.style.display = 'none';
+                
+                // Scroll to review form
+                reviewFormContainer.scrollIntoView({ behavior: 'smooth' });
+            });
+            
+            cancelReviewBtn.addEventListener('click', function() {
+                reviewFormContainer.style.display = 'none';
+                writeReviewBtn.style.display = 'block';
+            });
+            
+            // Setup rating stars
+            setupRatingStars(productId);
+        });
+        
+        function loadProductDetails(productId) {
+            const products = getProducts();
+            const product = products.find(p => p.id === productId);
+            
+            if (!product) {
+                window.location.href = 'products.html';
+                return;
+            }
+            
+            document.title = `${product.name} - CatalogueScore`;
+            document.getElementById('product-breadcrumb-name').textContent = product.name;
+            
+            const container = document.getElementById('product-view-container');
+            
+            container.innerHTML = `
+                <div class="product-view-grid">
+                    <div class="product-view-gallery">
+                        <div class="product-main-image">
+                            <img src="${product.image}" alt="${product.name}">
+                        </div>
+                        <div class="product-thumbnails">
+                            <div class="thumbnail active">
+                                <img src="${product.image}" alt="${product.name}">
+                            </div>
+                            <div class="thumbnail">
+                                <img src="${product.image.replace('text=', 'text=Side+View+')}" alt="${product.name} - Side View">
+                            </div>
+                            <div class="thumbnail">
+                                <img src="${product.image.replace('text=', 'text=Back+View+')}" alt="${product.name} - Back View">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="product-view-info">
+                        <h1 class="product-view-title">${product.name}</h1>
+                        <div class="product-view-rating">
+                            ${generateStarRating(product.rating)}
+                            <span class="rating-count">(${product.ratingCount || 0} ratings)</span>
+                        </div>
+                        <div class="product-view-price">$${product.price.toFixed(2)}</div>
+                        <div class="product-view-category">Category: <span>${product.category}</span></div>
+                        <div class="product-view-availability">Availability: <span class="in-stock">In Stock</span></div>
+                        <div class="product-view-description">
+                            <p>${product.description}</p>
+                        </div>
+                        <div class="product-view-quantity">
+                            <label for="quantity">Quantity:</label>
+                            <div class="quantity-control">
+                                <button class="quantity-btn decrease" id="decrease-quantity">-</button>
+                                <input type="number" id="quantity" value="1" min="1" max="10">
+                                <button class="quantity-btn increase" id="increase-quantity">+</button>
+                            </div>
+                        </div>
+                        <div class="product-view-actions">
+                            <button id="add-to-cart" class="btn btn-secondary">Add to Cart</button>
+                            <button id="buy-now" class="btn btn-primary">Buy Now</button>
+                        </div>
+                        <div class="product-view-share">
+                            <span>Share:</span>
+                            <div class="share-buttons">
+                                <a href="#" class="share-btn">Facebook</a>
+                                <a href="#" class="share-btn">Twitter</a>
+                                <a href="#" class="share-btn">Pinterest</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Quantity control
+            const quantityInput = document.getElementById('quantity');
+            const decreaseBtn = document.getElementById('decrease-quantity');
+            const increaseBtn = document.getElementById('increase-quantity');
+            
+            decreaseBtn.addEventListener('click', function() {
+                const currentValue = parseInt(quantityInput.value);
+                if (currentValue > 1) {
+                    quantityInput.value = currentValue - 1;
+                }
+            });
+            
+            increaseBtn.addEventListener('click', function() {
+                const currentValue = parseInt(quantityInput.value);
+                if (currentValue < 10) {
+                    quantityInput.value = currentValue + 1;
+                }
+            });
+            
+            // Thumbnail switching
+            const thumbnails = document.querySelectorAll('.thumbnail');
+            const mainImage = document.querySelector('.product-main-image img');
+            
+            thumbnails.forEach(thumbnail => {
+                thumbnail.addEventListener('click', function() {
+                    // Remove active class from all thumbnails
+                    thumbnails.forEach(t => t.classList.remove('active'));
+                    
+                    // Add active class to clicked thumbnail
+                    this.classList.add('active');
+                    
+                    // Update main image
+                    const thumbnailImg = this.querySelector('img');
+                    mainImage.src = thumbnailImg.src;
+                    mainImage.alt = thumbnailImg.alt;
+                });
+            });
+            
+            // Add to cart button
+            document.getElementById('add-to-cart').addEventListener('click', function() {
+                const quantity = parseInt(document.getElementById('quantity').value);
+                
+                for (let i = 0; i < quantity; i++) {
+                    addToCart(product);
+                }
+                
+                updateCartCount();
+                
+                // Show added to cart message
+                const button = this;
+                const originalText = button.textContent;
+                button.textContent = `Added ${quantity} to Cart!`;
+                button.disabled = true;
+                
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.disabled = false;
+                }, 2000);
+            });
+            
+            // Buy now button
+            document.getElementById('buy-now').addEventListener('click', function() {
+                const quantity = parseInt(document.getElementById('quantity').value);
+                
+                for (let i = 0; i < quantity; i++) {
+                    addToCart(product);
+                }
+                
+                // Redirect to cart page
+                window.location.href = 'cart.html';
+            });
+        }
+        
+        function loadProductSpecifications(productId) {
+            const products = getProducts();
+            const product = products.find(p => p.id === productId);
+            
+            if (!product) {
+                return;
+            }
+            
+            // Generate specifications based on product category
+            let specifications = [];
+            
+            switch (product.category) {
+                case 'electronics':
+                    specifications = [
+                        { name: 'Brand', value: 'TechBrand' },
+                        { name: 'Model', value: product.name },
+                        { name: 'Warranty', value: '1 Year' },
+                        { name: 'Dimensions', value: '15 x 10 x 2 cm' },
+                        { name: 'Weight', value: '350g' },
+                        { name: 'Color', value: 'Black/Silver' },
+                        { name: 'Power', value: 'Rechargeable Battery' }
+                    ];
+                    break;
+                case 'clothing':
+                    specifications = [
+                        { name: 'Brand', value: 'FashionBrand' },
+                        { name: 'Material', value: '100% Cotton' },
+                        { name: 'Care Instructions', value: 'Machine Wash Cold' },
+                        { name: 'Sizes Available', value: 'S, M, L, XL' },
+                        { name: 'Colors Available', value: 'Black, White, Blue, Red' },
+                        { name: 'Style', value: 'Casual' },
+                        { name: 'Country of Origin', value: 'USA' }
+                    ];
+                    break;
+                case 'home':
+                    specifications = [
+                        { name: 'Brand', value: 'HomeBrand' },
+                        { name: 'Material', value: 'Stainless Steel/Ceramic' },
+                        { name: 'Dimensions', value: '30 x 20 x 15 cm' },
+                        { name: 'Weight', value: '1.2 kg' },
+                        { name: 'Warranty', value: '2 Years' },
+                        { name: 'Care Instructions', value: 'Hand Wash Only' },
+                        { name: 'Country of Origin', value: 'Italy' }
+                    ];
+                    break;
+                case 'books':
+                    specifications = [
+                        { name: 'Author', value: 'John Doe' },
+                        { name: 'Publisher', value: 'Book Publishing Co.' },
+                        { name: 'Language', value: 'English' },
+                        { name: 'Paperback', value: '350 pages' },
+                        { name: 'ISBN-10', value: '1234567890' },
+                        { name: 'Dimensions', value: '20 x 15 x 2.5 cm' },
+                        { name: 'Publication Date', value: 'January 1, 2023' }
+                    ];
+                    break;
+                default:
+                    specifications = [
+                        { name: 'Brand', value: 'Generic' },
+                        { name: 'Model', value: product.name },
+                        { name: 'Warranty', value: '1 Year' }
+                    ];
+            }
+            
+            const container = document.getElementById('product-specifications');
+            
+            container.innerHTML = `
+                <table class="specifications-table">
+                    <tbody>
+                        ${specifications.map(spec => `
+                            <tr>
+                                <th>${spec.name}</th>
+                                <td>${spec.value}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+        
+        function loadReviews(productId) {
+            const reviews = getReviews().filter(r => r.productId === productId);
+            const container = document.getElementById('reviews-container');
+            
+            if (reviews.length === 0) {
+                container.innerHTML = '<p class="no-reviews">No reviews yet. Be the first to rate this product!</p>';
+                return;
+            }
+            
+            container.innerHTML = '';
+            
+            // Calculate average rating
+            const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
+            const averageRating = totalRating / reviews.length;
+            
+            // Add rating summary
+            const ratingSummary = document.createElement('div');
+            ratingSummary.className = 'rating-summary';
+            ratingSummary.innerHTML = `
+                <div class="average-rating">
+                    <div class="average-rating-value">${averageRating.toFixed(1)}</div>
+                    <div class="average-rating-stars">${generateStarRating(averageRating)}</div>
+                    <div class="total-reviews">${reviews.length} ${reviews.length === 1 ? 'review' : 'reviews'}</div>
+                </div>
+                <div class="rating-bars">
+                    ${[5, 4, 3, 2, 1].map(stars => {
+                        const count = reviews.filter(r => r.rating === stars).length;
+                        const percentage = reviews.length > 0 ? (count / reviews.length) * 100 : 0;
+                        
+                        return `
+                            <div class="rating-bar">
+                                <div class="rating-label">${stars} star</div>
+                                <div class="rating-progress">
+                                    <div class="rating-progress-fill" style="width: ${percentage}%"></div>
+                                </div>
+                                <div class="rating-count">${count}</div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+            
+            container.appendChild(ratingSummary);
+            
+            // Add reviews list
+            const reviewsList = document.createElement('div');
+            reviewsList.className = 'reviews-list';
+            
+            reviews.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(review => {
+                const reviewElement = document.createElement('div');
+                reviewElement.className = 'review';
+                
+                reviewElement.innerHTML = `
+                    <div class="review-header">
+                        <div class="review-rating">${generateStarRating(review.rating)}</div>
+                        <div class="review-user">${review.userName}</div>
+                        <div class="review-date">${formatDate(review.date)}</div>
+                    </div>
+                    ${review.comment ? `<div class="review-comment">${review.comment}</div>` : ''}
+                `;
+                
+                reviewsList.appendChild(reviewElement);
+            });
+            
+            container.appendChild(reviewsList);
+        }
+        
+        function loadRelatedProducts(productId) {
+            const products = getProducts();
+            const currentProduct = products.find(p => p.id === productId);
+            
+            if (!currentProduct) {
+                return;
+            }
+            
+            // Get products in the same category
+            const relatedProducts = products
+                .filter(p => p.id !== productId && p.category === currentProduct.category)
+                .slice(0, 4);
+            
+            const container = document.getElementById('related-products');
+            container.innerHTML = '';
+            
+            if (relatedProducts.length === 0) {
+                container.innerHTML = '<p>No related products found.</p>';
+                return;
+            }
+            
+            relatedProducts.forEach(product => {
+                const productCard = createProductCard(product);
+                container.appendChild(productCard);
+            });
+        }
+        
+        function setupRatingStars(productId) {
+            const stars = document.querySelectorAll('#rating-input .star');
+            const submitButton = document.getElementById('submit-review');
+            const reviewMessage = document.getElementById('review-message');
+            const reviewComment = document.getElementById('review-comment');
+            let selectedRating = 0;
+            
+            // Star hover effect
+            stars.forEach(star => {
+                star.addEventListener('mouseover', function() {
+                    const rating = parseInt(this.getAttribute('data-rating'));
+                    highlightStars(rating);
+                });
+                
+                star.addEventListener('mouseout', function() {
+                    highlightStars(selectedRating);
+                });
+                
+                star.addEventListener('click', function() {
+                    selectedRating = parseInt(this.getAttribute('data-rating'));
+                    highlightStars(selectedRating);
+                });
+            });
+            
+            // Submit review
+            submitButton.addEventListener('click', function() {
+                // Check if user is logged in
+                const currentUser = getCurrentUser();
+                if (!currentUser) {
+                    alert('Please login to submit a review');
+                    window.location.href = `login.html?redirect=product-view.html?id=${productId}`;
+                    return;
+                }
+                
+                if (selectedRating === 0) {
+                    reviewMessage.textContent = 'Please select a rating';
+                    reviewMessage.className = 'message error';
+                    return;
+                }
+                
+                // Save rating
+                const products = getProducts();
+                const productIndex = products.findIndex(p => p.id === productId);
+                
+                if (productIndex === -1) {
+                    return;
+                }
+                
+                // Update product rating
+                const product = products[productIndex];
+                const currentRating = product.rating || 0;
+                const currentCount = product.ratingCount || 0;
+                
+                // Calculate new average rating
+                const newRating = ((currentRating * currentCount) + selectedRating) / (currentCount + 1);
+                product.rating = parseFloat(newRating.toFixed(1));
+                product.ratingCount = currentCount + 1;
+                
+                // Save to localStorage
+                localStorage.setItem('products', JSON.stringify(products));
+                
+                // Add review
+                const reviews = getReviews();
+                const newReview = {
+                    id: generateId(),
+                    productId,
+                    userId: currentUser.id,
+                    userName: currentUser.name,
+                    rating: selectedRating,
+                    comment: reviewComment.value.trim(),
+                    date: new Date().toISOString()
+                };
+                
+                reviews.push(newReview);
+                localStorage.setItem('reviews', JSON.stringify(reviews));
+                
+                // Show success message
+                reviewMessage.textContent = 'Thank you for your review!';
+                reviewMessage.className = 'message success';
+                
+                // Reset form
+                selectedRating = 0;
+                highlightStars(0);
+                reviewComment.value = '';
+                
+                // Hide review form after 2 seconds
+                setTimeout(() => {
+                    document.getElementById('review-form-container').style.display = 'none';
+                    document.getElementById('write-review-btn').style.display = 'block';
+                    
+                    // Reload reviews
+                    loadReviews(productId);
+                }, 2000);
+            });
+            
+            function highlightStars(rating) {
+                stars.forEach(star => {
+                    const starRating = parseInt(star.getAttribute('data-rating'));
+                    if (starRating <= rating) {
+                        star.textContent = '★';
+                        star.classList.add('filled');
+                    } else {
+                        star.textContent = '☆';
+                        star.classList.remove('filled');
+                    }
+                });
+            }
+        }
+    </script>
+</body>
+</html>
+

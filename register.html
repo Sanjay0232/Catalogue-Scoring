@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - CatalogueScore</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <div class="container">
+                <div class="logo">
+                    <h1>CatalogueScore</h1>
+                </div>
+                <div class="nav-links">
+                    <a href="index.html">Home</a>
+                    <a href="products.html">Products</a>
+                    <a href="cart.html">Cart <span id="cart-count">0</span></a>
+                    <a href="orders.html">Orders</a>
+                    <a href="account.html">Account</a>
+                    <a href="login.html" class="active" id="auth-link">Login</a>
+                </div>
+                <div class="mobile-menu-btn">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section class="auth-section">
+            <div class="container">
+                <div class="auth-container">
+                    <h2>Create an Account</h2>
+                    <form id="register-form" class="auth-form">
+                        <div class="form-group">
+                            <label for="name">Full Name</label>
+                            <input type="text" id="name" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            <input type="email" id="email" name="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <input type="password" id="password" name="password" required minlength="6">
+                        </div>
+                        <div class="form-group">
+                            <label for="confirm-password">Confirm Password</label>
+                            <input type="password" id="confirm-password" name="confirm-password" required minlength="6">
+                        </div>
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">Register</button>
+                        </div>
+                        <div id="register-error" class="error-message"></div>
+                    </form>
+                    <div class="auth-footer">
+                        <p>Already have an account? <a href="login.html">Login</a></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 CatalogueScore. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Update cart count
+            updateCartCount();
+            
+            // Mobile menu toggle
+            const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+            const navLinks = document.querySelector('.nav-links');
+            
+            mobileMenuBtn.addEventListener('click', function() {
+                navLinks.classList.toggle('active');
+                mobileMenuBtn.classList.toggle('active');
+            });
+            
+            // Register form submission
+            const registerForm = document.getElementById('register-form');
+            const registerError = document.getElementById('register-error');
+            
+            registerForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const name = document.getElementById('name').value;
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                const confirmPassword = document.getElementById('confirm-password').value;
+                
+                // Validate passwords match
+                if (password !== confirmPassword) {
+                    registerError.textContent = 'Passwords do not match';
+                    return;
+                }
+                
+                // Check if email already exists
+                const users = getUsers();
+                if (users.some(u => u.email === email)) {
+                    registerError.textContent = 'Email already in use';
+                    return;
+                }
+                
+                // Create new user
+                const newUser = {
+                    id: generateId(),
+                    name,
+                    email,
+                    password,
+                    role: 'user',
+                    createdAt: new Date().toISOString()
+                };
+                
+                // Add user to database
+                users.push(newUser);
+                localStorage.setItem('users', JSON.stringify(users));
+                
+                // Set user as logged in
+                localStorage.setItem('currentUser', JSON.stringify(newUser));
+                
+                // Redirect to home page
+                window.location.href = 'index.html';
+            });
+        });
+    </script>
+</body>
+</html>
+
